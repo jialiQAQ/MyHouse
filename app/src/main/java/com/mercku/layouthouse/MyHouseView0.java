@@ -15,14 +15,12 @@ import android.widget.Scroller;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by yanqiong.ran on 2019-07-12.
  * refer to:https://blog.csdn.net/zhongwn/article/details/51984476
  */
-public class MyHouseView extends View {
+public class MyHouseView0 extends View {
     private Context mContext;
 
     private static final String TAG = "ryq-MyHouseView";
@@ -57,6 +55,8 @@ public class MyHouseView extends View {
     private Paint mFocusedPaint;
     private int mLastSeletedViewIndex;
     private Paint mGridPaint;
+    private Bitmap mBitmap;
+    private Canvas mBitmapCanvas;
 
     private class House {
         private String name;
@@ -64,12 +64,12 @@ public class MyHouseView extends View {
         private String id;
     }
 
-    public MyHouseView(Context context) {
+    public MyHouseView0(Context context) {
         super(context);
         init(context);
     }
 
-    public MyHouseView(Context context, AttributeSet attrs) {
+    public MyHouseView0(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
@@ -113,6 +113,13 @@ public class MyHouseView extends View {
         mGridPaint.setStrokeWidth(1f);
 
         mHouseList = new ArrayList<>();
+
+        /**
+         * https://blog.csdn.net/lincyang/article/details/45557953
+         */
+        mBitmap = Bitmap.createBitmap(4800, 4800, Bitmap.Config.ARGB_8888);
+        mBitmapCanvas = new Canvas(mBitmap);
+        mBitmapCanvas.drawColor(Color.WHITE);
     }
 
     @Override
@@ -165,8 +172,8 @@ public class MyHouseView extends View {
         int vertz = 0;
         int hortz = 0;
         for (int i = 0; i < 100; i++) {
-            canvas.drawLine(-3000, vertz, width, vertz, mGridPaint);
-            canvas.drawLine(hortz, -3000, hortz, height, mGridPaint);
+            mBitmapCanvas.drawLine(-3000, vertz, width, vertz, mGridPaint);
+            mBitmapCanvas.drawLine(hortz, -3000, hortz, height, mGridPaint);
             vertz += space;
             hortz += space;
 
@@ -175,11 +182,14 @@ public class MyHouseView extends View {
             House house = mHouseList.get(index);
             RectF rect = house.rect;
             if (mSelectedViewIndex == index) {
-                canvas.drawRect(rect, mFocusedPaint);
+                mBitmapCanvas.drawRect(rect, mFocusedPaint);
             } else {
-                canvas.drawRect(rect, mPaint);
+                mBitmapCanvas.drawRect(rect, mPaint);
             }
-            canvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
+            mBitmapCanvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
+        }
+        if(mBitmap != null) {
+            canvas.drawBitmap(mBitmap, 0, 0, mPaint);
         }
 
     }

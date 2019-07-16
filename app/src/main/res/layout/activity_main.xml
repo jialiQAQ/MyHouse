@@ -7,13 +7,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context="com.mercku.layouthouse.MainActivity0">
-    <com.mercku.layouthouse.MyHouseView
+    <com.mercku.layouthouse.MyHouseView0
             android:id="@+id/layout_scrollview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-    </com.mercku.layouthouse.MyHouseView>
+    </com.mercku.layouthouse.MyHouseView0>
 
     <TextView
             android:id="@+id/text_tap_to_add"

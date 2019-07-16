@@ -12,7 +12,7 @@ import android.view.ViewGroup;
  * Created by yanqiong.ran on 2019-07-12.
  */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private MyHouseView mMyHouseView;
+    private MyHouseView0 mMyHouseView;
     private View mLeftSideView;
     private int mCount = 0;
 
