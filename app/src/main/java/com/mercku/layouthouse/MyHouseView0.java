@@ -161,6 +161,7 @@ public class MyHouseView0 extends View {
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
+       // mBitmapCanvas.drawColor(0, PorterDuff.Mode.CLEAR);//不加这句，会有重影，加了会不断刷新
         Log.d(TAG, "draw canvas getLeft=" + getLeft() + "getX()=" + getX() + " getTranslationX()=" + getTranslationX() +
                 " getWidth()=" + getWidth() + " getHeight()=" + getHeight());
 
@@ -172,8 +173,8 @@ public class MyHouseView0 extends View {
         int vertz = 0;
         int hortz = 0;
         for (int i = 0; i < 100; i++) {
-            mBitmapCanvas.drawLine(-3000, vertz, width, vertz, mGridPaint);
-            mBitmapCanvas.drawLine(hortz, -3000, hortz, height, mGridPaint);
+            canvas.drawLine(-3000, vertz, width, vertz, mGridPaint);
+            canvas.drawLine(hortz, -3000, hortz, height, mGridPaint);
             vertz += space;
             hortz += space;
 

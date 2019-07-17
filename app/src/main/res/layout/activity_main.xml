@@ -5,16 +5,39 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/layout_house"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context="com.mercku.layouthouse.MainActivity0">
-    <com.mercku.layouthouse.MyHouseView0
+        android:layout_height="match_parent">
+    <!--    <ScrollView android:layout_width="6000dp"
+                    android:layout_height="6000dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:background="@drawable/canvas_background"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:scrollbars="none">
+            <com.mercku.layouthouse.MyHouseView
+                    android:id="@+id/layout_scrollview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+            </com.mercku.layouthouse.MyHouseView>
+        </ScrollView>-->
+
+    <com.agsw.FabricView.FabricView
+            android:id="@+id/layout_actionEditorCanvasView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+    </com.agsw.FabricView.FabricView>
+
+    <com.mercku.layouthouse.MyHouseView
             android:id="@+id/layout_scrollview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-    </com.mercku.layouthouse.MyHouseView0>
-
+    </com.mercku.layouthouse.MyHouseView>
     <TextView
             android:id="@+id/text_tap_to_add"
             android:layout_width="wrap_content"
@@ -57,6 +80,31 @@
                 android:padding="10dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"/>
+        <Button
+                android:id="@+id/text_zoom_in"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="缩小"
+                android:padding="10dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+        <Button
+                android:id="@+id/text_zoom_out"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="放大"
+                android:padding="10dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+        <Button
+                android:id="@+id/text_reset_zoom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="恢复大小"
+                android:padding="10dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
     </LinearLayout>
+
 
 </android.support.constraint.ConstraintLayout>

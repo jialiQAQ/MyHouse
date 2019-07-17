@@ -12,9 +12,10 @@ import android.view.ViewGroup;
  * Created by yanqiong.ran on 2019-07-12.
  */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private MyHouseView0 mMyHouseView;
+    private MyHouseView mMyHouseView;
     private View mLeftSideView;
     private int mCount = 0;
+    private com.agsw.FabricView.FabricView  mActionEditorView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -25,8 +26,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.text_add_room).setOnClickListener(this);
         findViewById(R.id.text_remove_room).setOnClickListener(this);
         findViewById(R.id.text_rename_room).setOnClickListener(this);
+        findViewById(R.id.text_zoom_in).setOnClickListener(this);
+        findViewById(R.id.text_zoom_out).setOnClickListener(this);
+        findViewById(R.id.text_reset_zoom).setOnClickListener(this);
         mLeftSideView = findViewById(R.id.layout_left_side);
         mMyHouseView = findViewById(R.id.layout_scrollview);
+        mActionEditorView = findViewById(R.id.layout_actionEditorCanvasView);
     }
 
     @Override
@@ -43,6 +48,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.text_rename_room:
                 onClickRename();
+            case R.id.text_zoom_in:
+                if(mActionEditorView instanceof ActionEditorCanvasView){
+                    ((ActionEditorCanvasView)mActionEditorView).zoomIn();
+                }
+
+            case R.id.text_zoom_out:
+                if(mActionEditorView instanceof ActionEditorCanvasView){
+                    ((ActionEditorCanvasView)mActionEditorView).zoomOut();
+                }
+
+            case R.id.text_reset_zoom:
+                if(mActionEditorView instanceof ActionEditorCanvasView){
+                    ((ActionEditorCanvasView)mActionEditorView).resetView();
+                }
             default:
                 break;
         }

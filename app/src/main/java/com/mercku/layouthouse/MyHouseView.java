@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Scroller;
@@ -24,6 +25,11 @@ import java.util.Map;
  */
 public class MyHouseView extends View {
     private Context mContext;
+    // Scale and zoom in/out factor.
+    private static final int INIT_ZOOM_SCALES_INDEX = 0;
+    private int mCurrentZoomScaleIndex = INIT_ZOOM_SCALES_INDEX;
+    private static final float[] ZOOM_SCALES = new float[]{1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
+    private float mViewScale = ZOOM_SCALES[INIT_ZOOM_SCALES_INDEX];
 
     private static final String TAG = "ryq-MyHouseView";
     private Scroller mScroller;
@@ -57,6 +63,8 @@ public class MyHouseView extends View {
     private Paint mFocusedPaint;
     private int mLastSeletedViewIndex;
     private Paint mGridPaint;
+    private ScaleGestureDetector mScaleGestureDetector;
+    private boolean mIsScale;
 
     private class House {
         private String name;
@@ -107,7 +115,7 @@ public class MyHouseView extends View {
         mTextPaint.setAlpha(1000);//设置透明度
 
         mGridPaint = new Paint();
-        mGridPaint.setColor(Color.RED);
+        mGridPaint.setColor(getResources().getColor(R.color.blue_green));
         mGridPaint.setStrokeJoin(Paint.Join.ROUND);
         mGridPaint.setStrokeCap(Paint.Cap.ROUND);
         mGridPaint.setStrokeWidth(1f);
@@ -138,7 +146,7 @@ public class MyHouseView extends View {
         int minh = getPaddingBottom() + getPaddingTop() + mContext.getResources().getDisplayMetrics().heightPixels;
         int h = resolveSizeAndState(minh, heightMeasureSpec, 1);
         Log.d(TAG, "onMeasure w =" + w + " h= " + h);
-        setMeasuredDimension(w, h);
+        // setMeasuredDimension(w, h);
     }
 
     @Override
@@ -154,6 +162,7 @@ public class MyHouseView extends View {
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
+        // drawBackground(canvas, mBackgroundMode);
         Log.d(TAG, "draw canvas getLeft=" + getLeft() + "getX()=" + getX() + " getTranslationX()=" + getTranslationX() +
                 " getWidth()=" + getWidth() + " getHeight()=" + getHeight());
 
@@ -165,12 +174,20 @@ public class MyHouseView extends View {
         int vertz = 0;
         int hortz = 0;
         for (int i = 0; i < 100; i++) {
-            canvas.drawLine(-3000, vertz, width, vertz, mGridPaint);
-            canvas.drawLine(hortz, -3000, hortz, height, mGridPaint);
+            canvas.drawLine(0, vertz, width, vertz, mGridPaint);
+            canvas.drawLine(hortz, 0, hortz, height, mGridPaint);
             vertz += space;
             hortz += space;
 
         }
+      /*  int screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
+        ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(this, "translationX", -screenWidth / 2);
+        objectAnimatorX.setDuration(1000);
+        objectAnimatorX.start();
+        ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(this, "translationY", -screenHeight / 2);
+        objectAnimatorY.setDuration(1000);
+        objectAnimatorY.start();*/
         for (int index = 0; index < mHouseList.size(); index++) {
             House house = mHouseList.get(index);
             RectF rect = house.rect;
@@ -181,7 +198,7 @@ public class MyHouseView extends View {
             }
             canvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
         }
-
+        canvas.scale(0.5f, 0.5f);
     }
 
     public void addView() {
@@ -249,9 +266,18 @@ public class MyHouseView extends View {
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        Log.d(TAG, "onTouchEvent event.getAction() = " + event.getAction());
+
         mCurrentX = event.getX();
         mCurrentY = event.getY();
+        boolean result = true;
+        mIsScale = false;
+        Log.d(TAG, "onTouchEvent event.getAction() = " + event.getAction() + " mIsScale=" + mIsScale
+                + " event.getPointerCount()=" + event.getPointerCount() + " event.getActionMasked()=" + event.getActionMasked());
+        if (event.getPointerCount() > 1) {
+            mScaleGestureDetector.onTouchEvent(event);
+            return true;
+        }
+
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mLastDownX = event.getX();
@@ -363,7 +389,7 @@ public class MyHouseView extends View {
                 }
                 break;
         }
-        return true;//需要返回true否则down后无法执行move和up操作
+        return result;//需要返回true否则down后无法执行move和up操作
     }
 
     @Override
@@ -438,5 +464,195 @@ public class MyHouseView extends View {
     public static DisplayMetrics getScreenSize(Context context) {
         return context.getResources().getDisplayMetrics();
     }
+
+    /*******************************************
+     * Drawing Events
+     ******************************************/
+    /**
+     * Draw the background on the canvas
+     *
+     * @param canvas         the canvas to draw on
+     * @param backgroundMode one of BACKGROUND_STYLE_GRAPH_PAPER, BACKGROUND_STYLE_NOTEBOOK_PAPER, BACKGROUND_STYLE_BLANK
+     */
+    private int mBackgroundColor = Color.WHITE;
+    public static final int BACKGROUND_STYLE_BLANK = 0;
+
+    public static final int BACKGROUND_STYLE_NOTEBOOK_PAPER = 1;
+
+    public static final int BACKGROUND_STYLE_GRAPH_PAPER = 2;
+
+    private int mBackgroundMode = BACKGROUND_STYLE_GRAPH_PAPER;
+
+    private Paint.Style mStyle = Paint.Style.STROKE;
+
+    private float mSize = 5f;
+
+    public void drawBackground(Canvas canvas, int backgroundMode) {
+        if (mBackgroundColor != Color.TRANSPARENT) {
+            canvas.drawColor(mBackgroundColor);
+        }
+        if (backgroundMode != BACKGROUND_STYLE_BLANK) {
+            Paint linePaint = new Paint();
+            // linePaint.setColor(Color.argb(50, 0, 0, 0));
+            linePaint.setColor(getResources().getColor(R.color.blue_green));
+            linePaint.setStyle(mStyle);
+            linePaint.setStrokeJoin(Paint.Join.ROUND);
+            linePaint.setStrokeWidth(mSize - 2f);
+            switch (backgroundMode) {
+                case BACKGROUND_STYLE_GRAPH_PAPER:
+                    drawGraphPaperBackground(canvas, linePaint);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        //mRedrawBackground = false;
+    }
+
+    /**
+     * Draws a graph paper background on the view
+     *
+     * @param canvas the canvas to draw on
+     * @param paint  the paint to use
+     */
+    private void drawGraphPaperBackground(Canvas canvas, Paint paint) {
+        int i = 0;
+        boolean doneH = false, doneV = false;
+
+        // while we still need to draw either H or V
+        while (!(doneH && doneV)) {
+
+            // check if there is more H lines to draw
+            if (i < canvas.getHeight()) {
+                canvas.drawLine(0, i, canvas.getWidth(), i, paint);
+            } else {
+                doneH = true;
+            }
+            // check if there is more V lines to draw
+            if (i < canvas.getWidth()) {
+                canvas.drawLine(i, 0, i, canvas.getHeight(), paint);
+            } else {
+                doneV = true;
+            }
+            // declare as done
+            i += 75;
+        }
+    }
+
+    /**
+     * The method onFinishInflate() will be called after all children have been added.
+     * 这个方法是所有的子view被添加之后调用
+     */
+    protected boolean mScrollable = true;
+
+    @Override
+    public void onFinishInflate() {
+        super.onFinishInflate();
+
+        // Setting the child view's pivot point to (0,0) means scaling leaves top-left corner in
+        // place means there is no need to adjust view translation.
+        this.setPivotX(0);
+        this.setPivotY(0);
+
+        setWillNotDraw(false);
+        setHorizontalScrollBarEnabled(mScrollable);                 //水平滑动滚动条的设置
+        setVerticalScrollBarEnabled(mScrollable);                   //竖直滑动滚动条的设置
+        mBackgroundMode = BACKGROUND_STYLE_GRAPH_PAPER;
+        mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureListener());         //设置手势缩放的监听
+
+    }
+
+    private class ScaleGestureListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        // Focus point at the start of the pinch gesture. This is used for computing proper scroll
+        // offsets during scaling, as well as for simultaneous panning.
+        private float mStartFocusX;
+        private float mStartFocusY;
+        // View scale at the beginning of the gesture. This is used for computing proper scroll
+        // offsets during scaling.
+        private float mStartScale;
+        // View scroll offsets at the beginning of the gesture. These provide the reference point
+        // for adjusting scroll in response to scaling and panning.
+        private int mStartScrollX;
+        private int mStartScrollY;
+
+        @Override
+        public boolean onScaleBegin(ScaleGestureDetector detector) {
+            mStartFocusX = detector.getFocusX();
+            mStartFocusY = detector.getFocusY();
+            mStartScrollX = getScrollX();
+            mStartScrollY = getScrollY();
+            Log.d(TAG, "onScaleBegin mViewScale = " + mViewScale);
+            mStartScale = mViewScale;
+            return true;
+        }
+
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            final float oldViewScale = mViewScale;
+
+            final float scaleFactor = detector.getScaleFactor();
+            mViewScale *= scaleFactor;
+
+            if (mViewScale < ZOOM_SCALES[0]) {
+                mCurrentZoomScaleIndex = 0;
+                mViewScale = ZOOM_SCALES[mCurrentZoomScaleIndex];
+            } else if (mViewScale > ZOOM_SCALES[ZOOM_SCALES.length - 1]) {
+                mCurrentZoomScaleIndex = ZOOM_SCALES.length - 1;
+                mViewScale = ZOOM_SCALES[mCurrentZoomScaleIndex];
+            } else {
+                // find nearest zoom scale
+                float minDist = Float.MAX_VALUE;
+                // If we reach the end the last one was the closest
+                int index = ZOOM_SCALES.length - 1;
+                for (int i = 0; i < ZOOM_SCALES.length; i++) {
+                    float dist = Math.abs(mViewScale - ZOOM_SCALES[i]);
+                    if (dist < minDist) {
+                        minDist = dist;
+                    } else {
+                        // When it starts increasing again we've found the closest
+                        index = i - 1;
+                        break;
+                    }
+                }
+                mCurrentZoomScaleIndex = index;
+            }
+
+          /*  if (shouldDrawGrid()) {
+                mGridRenderer.updateGridBitmap(mViewScale);
+            }*/
+
+            MyHouseView.this.setScaleX(mViewScale);
+            MyHouseView.this.setScaleY(mViewScale);
+
+            // Compute scroll offsets based on difference between original and new scaling factor
+            // and the focus point where the gesture started. This makes sure that the scroll offset
+            // is adjusted to keep the focus point in place on the screen unless there is also a
+            // focus point shift (see next scroll component below).
+            final float scaleDifference = mViewScale - mStartScale;
+            final int scrollScaleX = (int) (scaleDifference * mStartFocusX);
+            final int scrollScaleY = (int) (scaleDifference * mStartFocusY);
+
+            // Compute scroll offset based on shift of the focus point. This makes sure the view
+            // pans along with the focus.
+            final int scrollPanX = (int) (mStartFocusX - detector.getFocusX());
+            final int scrollPanY = (int) (mStartFocusY - detector.getFocusY());
+
+            // Apply the computed scroll components for scale and panning relative to the scroll
+            // coordinates at the beginning of the gesture.
+           // scrollTo(mStartScrollX + scrollScaleX + scrollPanX,
+           //         mStartScrollY + scrollScaleY + scrollPanY);
+            /*ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
+            mObjectAnimator.setDuration(1000);
+            mObjectAnimator.start();*/
+            Log.d(TAG, "onScale mViewScale = " + mViewScale +
+                    " mStartScale=" + mStartScale + " mStartFocusX=" + mStartFocusX
+                    + " mStartFocusY=" + mStartFocusY +
+                    " detector.getFocusX()=" + detector.getFocusX() + "  detector.getFocusY()=" + detector.getFocusY());
+            mIsScale = true;
+            return true;
+        }
+    }
+
 
 }
