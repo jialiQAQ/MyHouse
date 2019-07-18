@@ -23,7 +23,7 @@ private int mCount=0;
         findViewById(R.id.text_tap_to_add).setOnClickListener(this);
         findViewById(R.id.text_rect).setOnClickListener(this);
         mLeftSideView = findViewById(R.id.layout_left_side);
-        mScrollviewLayout = findViewById(R.id.layout_scrollview);
+        mScrollviewLayout = findViewById(R.id.layout_house);
         mHouseLayoutView = findViewById(R.id.layout_house);
     }
 

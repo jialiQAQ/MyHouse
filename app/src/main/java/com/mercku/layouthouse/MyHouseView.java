@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.Scroller;
 import android.widget.Toast;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 
 /**
@@ -26,7 +27,7 @@ public class MyHouseView extends View {
     // Scale and zoom in/out factor.
     private static final int INIT_ZOOM_SCALES_INDEX = 0;
     private int mCurrentZoomScaleIndex = INIT_ZOOM_SCALES_INDEX;
-    private static final float[] ZOOM_SCALES = new float[]{1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
+    private static final float[] ZOOM_SCALES = new float[]{0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 3.0f};
     private float mViewScale = ZOOM_SCALES[INIT_ZOOM_SCALES_INDEX];
 
     private static final String TAG = "ryq-MyHouseView";
@@ -51,12 +52,8 @@ public class MyHouseView extends View {
     private static final int RIGHT_BOTTOM = 1 + 1 + 1;
     private static final int LEFT_BOTTOM = 1 + 1 + 1 + 1;
     private int mSelectedViewIndex;
-    private float mScrollStartX;
-    private float mScrollStartY;
     private float mLastDownX;
     private float mLastDownY;
-    private float mScrollEndX;
-    private float mScrollEndY;
     private Paint mTextPaint;
     private Paint mFocusedHousePaint;
     private int mLastSeletedViewIndex;
@@ -65,10 +62,24 @@ public class MyHouseView extends View {
     private boolean mIsScale;
     private static final float DEFAULT_WALL_WIDTH = 200;
     private static final float DEFAULT_WALL_HEIGHT = 200;
+    private static final float DEFAULT_DOT_RADIUS = 30;
+    public static final int HOUSE_MODE = 100;
+    public static final int DOTS_MODE = 101;
+    private int mCurrentMode;
+    private AbstractList<Node> mDotList;
+    private int mSelectedDotIndex = NONE_TOUCH;
+    private int mLastSeletedDotIndex = NONE_TOUCH;
 
     private class House {
         private String name;
         private RectF rect;
+        private String id;
+    }
+
+    private class Node {
+        private String sn;
+        private float cx;
+        private float cy;
         private String id;
     }
 
@@ -121,11 +132,27 @@ public class MyHouseView extends View {
         mGridPaint.setStrokeWidth(1f);
 
         mHouseList = new ArrayList<>();
+        mDotList = new ArrayList<>();
     }
+
+    public void setMode(int mode) {
+        mCurrentMode = mode;
+        mSelectedDotIndex = NONE_TOUCH;
+        mLastSeletedDotIndex = NONE_TOUCH;
+        mSelectedViewIndex = NONE_TOUCH;
+        mLastSeletedViewIndex = NONE_TOUCH;
+        postInvalidate();
+    }
+
+    private static final int fixedWidthMeasureSpec
+            = View.MeasureSpec.makeMeasureSpec(2160, View.MeasureSpec.EXACTLY);
+
+    private static final int fixedHeightMeasureSpec
+            = View.MeasureSpec.makeMeasureSpec(3840, View.MeasureSpec.EXACTLY);
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        // super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         Log.d(TAG, "onMeasure widthMeasureSpec " + widthMeasureSpec + "heightMeasureSpec " + heightMeasureSpec);
         /***自身宽*/
@@ -139,14 +166,21 @@ public class MyHouseView extends View {
         // h=resolveSizeAndState(mContext.getResources().getDisplayMetrics().heightPixels,heightMeasureSpec,1);
 
         // Try for a width based on our minimum
-        int minw = getPaddingLeft() + getPaddingRight() + mContext.getResources().getDisplayMetrics().widthPixels;
+        int minw = getPaddingLeft() + getPaddingRight() + mContext.getResources().getDisplayMetrics().widthPixels * 2;
         int w = resolveSizeAndState(minw, widthMeasureSpec, 1);
         // Whatever the width ends up being, ask for a height that would let the pie
         // get as big as it can
-        int minh = getPaddingBottom() + getPaddingTop() + mContext.getResources().getDisplayMetrics().heightPixels;
+        int minh = getPaddingBottom() + getPaddingTop() + mContext.getResources().getDisplayMetrics().heightPixels * 2;
         int h = resolveSizeAndState(minh, heightMeasureSpec, 1);
-        Log.d(TAG, "onMeasure w =" + w + " h= " + h);
-        // setMeasuredDimension(w, h);
+        Log.d(TAG, "onMeasure w =" + w + " h= " + h + " minw=" + minw + " minh=" + minh);
+        // setMeasuredDimension(minw, minh);
+        super.onMeasure(fixedWidthMeasureSpec, fixedHeightMeasureSpec);
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        Log.d(TAG, "onMeasure w =" + w + " h= " + h + " oldw=" + oldw + " oldh=" + oldh);
     }
 
     @Override
@@ -157,6 +191,7 @@ public class MyHouseView extends View {
 //        totalHeight = getScreenSize(mContext).heightPixels * childCount;
 //        lp.height = totalHeight;//设置viewgroup总高度
 //        setLayoutParams(lp);
+        super.onLayout(changed, 0, 0, 2160, 3840);
     }
 
     @Override
@@ -180,6 +215,10 @@ public class MyHouseView extends View {
             House house = mHouseList.get(index);
             RectF rect = house.rect;
             if (mSelectedViewIndex == index) {
+                canvas.drawCircle(rect.left, rect.top, DEFAULT_DOT_RADIUS / 2, mFocusedHousePaint);
+                canvas.drawCircle(rect.left, rect.bottom, DEFAULT_DOT_RADIUS / 2, mFocusedHousePaint);
+                canvas.drawCircle(rect.right, rect.top, DEFAULT_DOT_RADIUS / 2, mFocusedHousePaint);
+                canvas.drawCircle(rect.right, rect.bottom, DEFAULT_DOT_RADIUS / 2, mFocusedHousePaint);
                 canvas.drawRect(rect, mFocusedHousePaint);
             } else {
                 canvas.drawRect(rect, mHousePaint);
@@ -187,12 +226,21 @@ public class MyHouseView extends View {
             drawText(canvas, house.name, rect);
 
         }
+        for (int index = 0; index < mDotList.size(); index++) {
+            Node dot = mDotList.get(index);
+            if (mSelectedDotIndex == index) {
+                canvas.drawCircle(dot.cx, dot.cy, DEFAULT_DOT_RADIUS, mFocusedHousePaint);
+            } else {
+                canvas.drawCircle(dot.cx, dot.cy, DEFAULT_DOT_RADIUS, mHousePaint);
+            }
+        }
     }
 
     private void drawBackground(Canvas canvas) {
         final int width = getWidth();  //hdpi 480x800
         final int height = getHeight();
-        // canvas.translate(width / 2, height / 2);
+        mBackgroundColor = mContext.getResources().getColor(R.color.half_trans);
+        canvas.drawColor(mBackgroundColor);
         final int edgeWidth = 10;
         final int space = 60;   //长宽间隔
         int vertz = 0;
@@ -239,6 +287,28 @@ public class MyHouseView extends View {
             postInvalidate();
         }
 
+    }
+
+    public void addDot() {
+        Node dot = new Node();
+        float startCenterX = 200 + DEFAULT_DOT_RADIUS;
+        float startCenterY = 200 + DEFAULT_DOT_RADIUS;
+        dot.id = String.valueOf(System.currentTimeMillis());
+        dot.cx = startCenterX;
+        dot.cy = startCenterY;
+        mDotList.add(dot);
+        postInvalidate();
+    }
+
+    public void removeDot() {
+        if (mSelectedDotIndex == NONE_TOUCH) {
+            Toast.makeText(mContext, "请先选择一个节点", Toast.LENGTH_LONG).show();
+        } else {
+            mDotList.remove(mSelectedDotIndex);
+            mSelectedDotIndex = NONE_TOUCH;
+            mLastSeletedDotIndex = NONE_TOUCH;
+            postInvalidate();
+        }
     }
 
     public void renameView() {
@@ -300,116 +370,189 @@ public class MyHouseView extends View {
             case MotionEvent.ACTION_DOWN:
                 mLastDownX = event.getX();
                 mLastDownY = event.getY();
-                mScrollStartX = getScrollX();
-                mScrollStartY = getScrollY();
-                if (mSelectedViewIndex == NONE_TOUCH) {
-                    mSelectedViewIndex = checkSelectedView();
+                if (mCurrentMode == HOUSE_MODE) {
+                    checkTouchDownViewRange();
                 } else {
-                    mLastSeletedViewIndex = mSelectedViewIndex;
-                    mSelectedViewIndex = checkSelectedView();
+                    checkTouchDownDotRange();
                 }
-                //这次选择的跟上次不同,则清除上次的选择
-                if (mSelectedViewIndex != NONE_TOUCH && mLastSeletedViewIndex != mSelectedViewIndex) {
-                    mLastSeletedViewIndex = NONE_TOUCH;
-                }
-
-                Log.d(TAG, "ACTION_DOWN mCurrentX = " + mCurrentX);
-                Log.d(TAG, "ACTION_DOWN mCurrentY = " + mCurrentY);
-                Log.d(TAG, "ACTION_DOWN mSelectedViewIndex = " + mSelectedViewIndex);
-                if (mSelectedViewIndex != NONE_TOUCH) {
-                    mCurrentNEAR = checkNear(mSelectedViewIndex);
-                }
-
                 break;
             case MotionEvent.ACTION_MOVE:
-                Log.d(TAG, "ACTION_MOVE mCurrentNEAR = " + mCurrentNEAR + " mLastSeletedViewIndex=" + mLastSeletedViewIndex
-                        + " mSelectedViewIndex=" + mSelectedViewIndex + " mCurrentNEAR=" + mCurrentNEAR);
-                if (mLastSeletedViewIndex != NONE_TOUCH) {
-                    if (mSelectedViewIndex != NONE_TOUCH) {
-                        if (mCurrentNEAR == NONE_POINT) {
-                            //move
-                            RectF rect = mHouseList.get(mSelectedViewIndex).rect;
-                            float newLeft = rect.left + mCurrentX - mLastDownX;
-                            float newRight = rect.right + mCurrentX - mLastDownX;
-                            float newTop = rect.top + mCurrentY - mLastDownY;
-                            float newBottom = rect.bottom + mCurrentY - mLastDownY;
-                            rect.set(newLeft, newTop, newRight, newBottom);
-                            mLastDownX = mCurrentX;
-                            mLastDownY = mCurrentY;
-                        } else {
-                            //scale
-                            //currentY = roundLength(currentY, mHeight);
-                            RectF rect = mHouseList.get(mSelectedViewIndex).rect;
-                            if (Math.abs(rect.right - mCurrentX) + 480 > mMaxWidth) {
-                                mMaxWidth = (int) Math.abs(rect.right - mCurrentX) + 480;
-                            }
-                            if (Math.abs(rect.bottom - mCurrentY) + 480 > mMaxHeight) {
-                                mMaxHeight = (int) Math.abs(rect.bottom - mCurrentY) + 480;
-                            }
-                            switch (mCurrentNEAR) {
-                                case LEFT_TOP:
-                                    rect.set(mCurrentX, mCurrentY, rect.right, rect.bottom);
-                                    break;
-                                case LEFT_BOTTOM:
-                                    rect.set(mCurrentX, rect.top, rect.right, mCurrentY);
-                                    break;
-                                case RIGHT_TOP:
-                                    rect.set(rect.left, mCurrentY, mCurrentX, rect.bottom);
-                                    break;
-                                case RIGHT_BOTTOM:
-                                    rect.set(rect.left, rect.top, mCurrentX, mCurrentY);
-                                    break;
-                            }
-                        }
-                        postInvalidate();
+                if (mSelectedViewIndex == NONE_TOUCH && mSelectedDotIndex == NONE_TOUCH) {
+                    scrollTheCanvas();
+                } else {
+                    switch (mCurrentMode) {
+                        case HOUSE_MODE:
+                            moveOrScaleHouse();
+                            break;
+                        case DOTS_MODE:
+                            moveDot();
+                            break;
+                        default:
+                            break;
                     }
-                } else if (mSelectedViewIndex == NONE_TOUCH) {
-                    float dy, dx;
-                    dy = mLastDownY - mCurrentY;
-                    dx = mLastDownX - mCurrentX;
-                    Log.d(TAG, "ACTION_MOVE mLastDownX=" + mLastDownX + " mLastDownY=" + mLastDownY
-                            + " mCurrentX=" + mCurrentX + " mCurrentY=" + mCurrentY
-                            + " dy = " + dy + " dx=" + dx);
-                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > MIN_MOVE_DIS) {
-                        //移动view中的内容
-                        // scrollBy((int) dx, 0);
-                        // invalidate();
-                        //当前的view平移,平移后无法选中房间
-                        // smoothScrollTo((int) dx, 0);
-                        //加上后滑动很卡
-                        //mLastDownX = mCurrentX;
-                        //TODO!!! 滑动不顺畅
-                        ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationX", -dx);
-                        mObjectAnimator.setDuration(500);
-                        mObjectAnimator.start();
-                    } else if (Math.abs(dx) <= Math.abs(dy) && Math.abs(dy) > MIN_MOVE_DIS) {
-                        // scrollBy(0, (int) dy);
-                        // invalidate();
-                        //当前的view平移,平移后无法选中房间
-                        //smoothScrollTo(0, (int) dy);
-                        //加上后滑动很卡
-                        //mLastDownY = mCurrentY;
-                        //TODO!!! 滑动不顺畅
-                        ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
-                        mObjectAnimator.setDuration(500);
-                        mObjectAnimator.start();
-                    }
-
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (mLastSeletedViewIndex == NONE_TOUCH) {
-                    if (mSelectedViewIndex != NONE_TOUCH) {
-                        postInvalidate();
-                    }
+                if (mLastSeletedViewIndex == NONE_TOUCH && mSelectedViewIndex != NONE_TOUCH
+                        || mLastSeletedDotIndex == NONE_TOUCH && mSelectedDotIndex != NONE_TOUCH) {
+                    postInvalidate();
                 } else {
                     mSelectedViewIndex = NONE_TOUCH;
                     mLastSeletedViewIndex = NONE_TOUCH;
+                    mSelectedDotIndex = NONE_TOUCH;
+                    mLastSeletedDotIndex = NONE_TOUCH;
                     postInvalidate();
                 }
                 break;
         }
         return result;//需要返回true否则down后无法执行move和up操作
+    }
+
+    private void scrollTheCanvas() {
+        float dy, dx;
+        dy = mLastDownY - mCurrentY;
+        dx = mLastDownX - mCurrentX;
+        Log.d(TAG, "ACTION_MOVE mLastDownX=" + mLastDownX + " mLastDownY=" + mLastDownY
+                + " mCurrentX=" + mCurrentX + " mCurrentY=" + mCurrentY
+                + " dy = " + dy + " dx=" + dx);
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > MIN_MOVE_DIS) {
+            //移动view中的内容
+            // scrollBy((int) dx, 0);
+            // invalidate();
+            //当前的view平移,平移后无法选中房间
+            // smoothScrollTo((int) dx, 0);
+            //加上后滑动很卡
+            //mLastDownX = mCurrentX;
+            //TODO!!! 滑动不顺畅
+            ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationX", -dx);
+            mObjectAnimator.setDuration(500);
+            mObjectAnimator.start();
+        } else if (Math.abs(dx) <= Math.abs(dy) && Math.abs(dy) > MIN_MOVE_DIS) {
+            // scrollBy(0, (int) dy);
+            // invalidate();
+            //当前的view平移,平移后无法选中房间
+            //smoothScrollTo(0, (int) dy);
+            //加上后滑动很卡
+            //mLastDownY = mCurrentY;
+            //TODO!!! 滑动不顺畅
+            ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
+            mObjectAnimator.setDuration(500);
+            mObjectAnimator.start();
+        }
+    }
+
+    private void moveDot() {
+        if (mLastSeletedDotIndex != NONE_TOUCH) {
+            if (mSelectedDotIndex != NONE_TOUCH) {
+                //move
+                Node node = mDotList.get(mSelectedDotIndex);
+                node.cx = node.cx + mCurrentX - mLastDownX;
+                node.cy = node.cy + mCurrentY - mLastDownY;
+                mLastDownX = mCurrentX;
+                mLastDownY = mCurrentY;
+                postInvalidate();
+            }
+        }
+    }
+
+    private void moveOrScaleHouse() {
+        Log.d(TAG, "ACTION_MOVE mCurrentNEAR = " + mCurrentNEAR + " mLastSeletedViewIndex=" + mLastSeletedViewIndex
+                + " mSelectedViewIndex=" + mSelectedViewIndex + " mCurrentNEAR=" + mCurrentNEAR);
+        if (mLastSeletedViewIndex != NONE_TOUCH) {
+            if (mSelectedViewIndex != NONE_TOUCH) {
+                if (mCurrentNEAR == NONE_POINT) {
+                    //move
+                    RectF rect = mHouseList.get(mSelectedViewIndex).rect;
+                    float newLeft = rect.left + mCurrentX - mLastDownX;
+                    float newRight = rect.right + mCurrentX - mLastDownX;
+                    float newTop = rect.top + mCurrentY - mLastDownY;
+                    float newBottom = rect.bottom + mCurrentY - mLastDownY;
+                    rect.set(newLeft, newTop, newRight, newBottom);
+                    mLastDownX = mCurrentX;
+                    mLastDownY = mCurrentY;
+                } else {
+                    //scale
+                    //currentY = roundLength(currentY, mHeight);
+                    RectF rect = mHouseList.get(mSelectedViewIndex).rect;
+                    if (Math.abs(rect.right - mCurrentX) + 480 > mMaxWidth) {
+                        mMaxWidth = (int) Math.abs(rect.right - mCurrentX) + 480;
+                    }
+                    if (Math.abs(rect.bottom - mCurrentY) + 480 > mMaxHeight) {
+                        mMaxHeight = (int) Math.abs(rect.bottom - mCurrentY) + 480;
+                    }
+                    switch (mCurrentNEAR) {
+                        case LEFT_TOP:
+                            rect.set(mCurrentX, mCurrentY, rect.right, rect.bottom);
+                            break;
+                        case LEFT_BOTTOM:
+                            rect.set(mCurrentX, rect.top, rect.right, mCurrentY);
+                            break;
+                        case RIGHT_TOP:
+                            rect.set(rect.left, mCurrentY, mCurrentX, rect.bottom);
+                            break;
+                        case RIGHT_BOTTOM:
+                            rect.set(rect.left, rect.top, mCurrentX, mCurrentY);
+                            break;
+                    }
+                }
+                postInvalidate();
+            }
+        }
+    }
+
+    private void checkTouchDownDotRange() {
+        if (mSelectedDotIndex == NONE_TOUCH) {
+            mSelectedDotIndex = checkSelectedDot();
+        } else {
+            mLastSeletedDotIndex = mSelectedDotIndex;
+            mSelectedDotIndex = checkSelectedDot();
+        }
+        //这次选择的跟上次不同,则清除上次的选择
+        if (mSelectedDotIndex != NONE_TOUCH && mLastSeletedDotIndex != mSelectedDotIndex) {
+            mLastSeletedDotIndex = NONE_TOUCH;
+        }
+
+        Log.d(TAG, "ACTION_DOWN mCurrentX = " + mCurrentX);
+        Log.d(TAG, "ACTION_DOWN mCurrentY = " + mCurrentY);
+        Log.d(TAG, "ACTION_DOWN mSelectedViewIndex = " + mSelectedDotIndex);
+
+    }
+
+    private int checkSelectedDot() {
+        int selectedViewIndex = NONE_TOUCH;
+        for (int index = 0; index < mDotList.size(); index++) {
+            Node node = mDotList.get(index);
+            Log.d(TAG, "checkSelectedView node.cx = " + node.cx
+                    + " node.cy=" + node.cy
+            );
+            if (mCurrentX >= (node.cx - DEFAULT_DOT_RADIUS - NEAR) && mCurrentX <= (node.cx + DEFAULT_DOT_RADIUS + NEAR)
+                    && mCurrentY >= (node.cy - DEFAULT_DOT_RADIUS - NEAR) && mCurrentY <= (node.cy + DEFAULT_DOT_RADIUS + NEAR)) {
+                selectedViewIndex = index;
+                break;
+            }
+        }
+        return selectedViewIndex;
+    }
+
+    private void checkTouchDownViewRange() {
+        if (mSelectedViewIndex == NONE_TOUCH) {
+            mSelectedViewIndex = checkSelectedView();
+        } else {
+            mLastSeletedViewIndex = mSelectedViewIndex;
+            mSelectedViewIndex = checkSelectedView();
+        }
+        //这次选择的跟上次不同,则清除上次的选择
+        if (mSelectedViewIndex != NONE_TOUCH && mLastSeletedViewIndex != mSelectedViewIndex) {
+            mLastSeletedViewIndex = NONE_TOUCH;
+        }
+
+        Log.d(TAG, "ACTION_DOWN mCurrentX = " + mCurrentX);
+        Log.d(TAG, "ACTION_DOWN mCurrentY = " + mCurrentY);
+        Log.d(TAG, "ACTION_DOWN mSelectedViewIndex = " + mSelectedViewIndex);
+        if (mSelectedViewIndex != NONE_TOUCH) {
+            mCurrentNEAR = checkNear(mSelectedViewIndex);
+        }
+
     }
 
     @Override

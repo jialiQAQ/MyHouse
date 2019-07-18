@@ -8,7 +8,7 @@
         android:layout_height="match_parent"
         tools:context="com.mercku.layouthouse.MainActivity0">
     <com.mercku.layouthouse.MyCanvasView
-            android:id="@+id/layout_scrollview"
+            android:id="@+id/layout_house"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
