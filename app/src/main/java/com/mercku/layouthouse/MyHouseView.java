@@ -16,8 +16,6 @@ import android.widget.Scroller;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by yanqiong.ran on 2019-07-12.
@@ -39,7 +37,7 @@ public class MyHouseView extends View {
     private ArrayList<String> mNameArrays = new ArrayList<String>();
     //每次从mNameArrays中从第0个按顺序选取名字。
     private int nameIndex = 0;
-    private Paint mPaint;
+    private Paint mHousePaint;
     private float mCurrentY;
     private float mCurrentX;
     private int mCurrentNEAR;
@@ -60,11 +58,13 @@ public class MyHouseView extends View {
     private float mScrollEndX;
     private float mScrollEndY;
     private Paint mTextPaint;
-    private Paint mFocusedPaint;
+    private Paint mFocusedHousePaint;
     private int mLastSeletedViewIndex;
     private Paint mGridPaint;
     private ScaleGestureDetector mScaleGestureDetector;
     private boolean mIsScale;
+    private static final float DEFAULT_WALL_WIDTH = 200;
+    private static final float DEFAULT_WALL_HEIGHT = 200;
 
     private class House {
         private String name;
@@ -93,19 +93,19 @@ public class MyHouseView extends View {
         mNameArrays.add("卫生间");
         mNameArrays.add("卧室");
 
-        mPaint = new Paint();
-        mPaint.setColor(Color.GRAY);
-        mPaint.setStrokeWidth(WALL_WIDTH);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setAntiAlias(true);//用于防止边缘的锯齿
-        mPaint.setAlpha(1000);//设置透明度
+        mHousePaint = new Paint();
+        mHousePaint.setColor(Color.GRAY);
+        mHousePaint.setStrokeWidth(WALL_WIDTH);
+        mHousePaint.setStyle(Paint.Style.STROKE);
+        mHousePaint.setAntiAlias(true);//用于防止边缘的锯齿
+        mHousePaint.setAlpha(1000);//设置透明度
 
-        mFocusedPaint = new Paint();
-        mFocusedPaint.setColor(Color.DKGRAY);
-        mFocusedPaint.setStrokeWidth(WALL_WIDTH);
-        mFocusedPaint.setStyle(Paint.Style.STROKE);
-        mFocusedPaint.setAntiAlias(true);//用于防止边缘的锯齿
-        mFocusedPaint.setAlpha(1000);//设置透明度
+        mFocusedHousePaint = new Paint();
+        mFocusedHousePaint.setColor(Color.DKGRAY);
+        mFocusedHousePaint.setStrokeWidth(WALL_WIDTH);
+        mFocusedHousePaint.setStyle(Paint.Style.STROKE);
+        mFocusedHousePaint.setAntiAlias(true);//用于防止边缘的锯齿
+        mFocusedHousePaint.setAlpha(1000);//设置透明度
 
         mTextPaint = new Paint();
         mTextPaint.setColor(Color.BLACK);
@@ -166,20 +166,7 @@ public class MyHouseView extends View {
         Log.d(TAG, "draw canvas getLeft=" + getLeft() + "getX()=" + getX() + " getTranslationX()=" + getTranslationX() +
                 " getWidth()=" + getWidth() + " getHeight()=" + getHeight());
 
-        final int width = getWidth();  //hdpi 480x800
-        final int height = getHeight();
-        // canvas.translate(width / 2, height / 2);
-        final int edgeWidth = 10;
-        final int space = 60;   //长宽间隔
-        int vertz = 0;
-        int hortz = 0;
-        for (int i = 0; i < 100; i++) {
-            canvas.drawLine(0, vertz, width, vertz, mGridPaint);
-            canvas.drawLine(hortz, 0, hortz, height, mGridPaint);
-            vertz += space;
-            hortz += space;
-
-        }
+        drawBackground(canvas);
       /*  int screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
         int screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
         ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(this, "translationX", -screenWidth / 2);
@@ -188,24 +175,54 @@ public class MyHouseView extends View {
         ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(this, "translationY", -screenHeight / 2);
         objectAnimatorY.setDuration(1000);
         objectAnimatorY.start();*/
+        //draw all houses
         for (int index = 0; index < mHouseList.size(); index++) {
             House house = mHouseList.get(index);
             RectF rect = house.rect;
             if (mSelectedViewIndex == index) {
-                canvas.drawRect(rect, mFocusedPaint);
+                canvas.drawRect(rect, mFocusedHousePaint);
             } else {
-                canvas.drawRect(rect, mPaint);
+                canvas.drawRect(rect, mHousePaint);
             }
-            float textPaintWidth = mTextPaint.measureText(house.name);
-            canvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
+            drawText(canvas, house.name, rect);
+
         }
-        canvas.scale(0.5f, 0.5f);
     }
+
+    private void drawBackground(Canvas canvas) {
+        final int width = getWidth();  //hdpi 480x800
+        final int height = getHeight();
+        // canvas.translate(width / 2, height / 2);
+        final int edgeWidth = 10;
+        final int space = 60;   //长宽间隔
+        int vertz = 0;
+        int hortz = 0;
+        //TODO!! 未铺满
+        for (int i = 0; i < 100; i++) {
+            canvas.drawLine(0, vertz, width, vertz, mGridPaint);
+            canvas.drawLine(hortz, 0, hortz, height, mGridPaint);
+            vertz += space;
+            hortz += space;
+
+        }
+    }
+
+    private void drawText(Canvas canvas, String name, RectF rect) {
+        float textPaintWidth = mTextPaint.measureText(name);
+        Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+        float textStartX = (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2;
+        float textStartY = (rect.bottom - rect.top) / 2 + rect.top;
+        canvas.drawText(name, textStartX, textStartY, mTextPaint);
+    }
+    //TODO!!  画布左上角不在可视范围，无法正确显示
 
     public void addView() {
         House house = new House();
-
-        house.rect = new RectF(0, 0, getX() + 200, getY() + 200);
+        float startLeft = 200;
+        float startTop = 200;
+        float startRight = startLeft + DEFAULT_WALL_WIDTH + mHousePaint.getStrokeWidth() * 2;
+        float startBottom = startTop + DEFAULT_WALL_HEIGHT + mHousePaint.getStrokeWidth() * 2;
+        house.rect = new RectF(startLeft, startTop, startRight, startBottom);
         house.name = mNameArrays.get(nameIndex++ % mNameArrays.size());
         house.id = String.valueOf(System.currentTimeMillis());
         mHouseList.add(house);
@@ -361,8 +378,9 @@ public class MyHouseView extends View {
                         // smoothScrollTo((int) dx, 0);
                         //加上后滑动很卡
                         //mLastDownX = mCurrentX;
+                        //TODO!!! 滑动不顺畅
                         ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationX", -dx);
-                        mObjectAnimator.setDuration(1000);
+                        mObjectAnimator.setDuration(500);
                         mObjectAnimator.start();
                     } else if (Math.abs(dx) <= Math.abs(dy) && Math.abs(dy) > MIN_MOVE_DIS) {
                         // scrollBy(0, (int) dy);
@@ -371,8 +389,9 @@ public class MyHouseView extends View {
                         //smoothScrollTo(0, (int) dy);
                         //加上后滑动很卡
                         //mLastDownY = mCurrentY;
+                        //TODO!!! 滑动不顺畅
                         ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
-                        mObjectAnimator.setDuration(1000);
+                        mObjectAnimator.setDuration(500);
                         mObjectAnimator.start();
                     }
 
