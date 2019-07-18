@@ -196,7 +196,8 @@ public class MyHouseView extends View {
             } else {
                 canvas.drawRect(rect, mPaint);
             }
-            canvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
+            float textPaintWidth = mTextPaint.measureText(house.name);
+            canvas.drawText(house.name, (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2, (rect.bottom - rect.top) / 2 + rect.top, mTextPaint);
         }
         canvas.scale(0.5f, 0.5f);
     }
@@ -640,8 +641,8 @@ public class MyHouseView extends View {
 
             // Apply the computed scroll components for scale and panning relative to the scroll
             // coordinates at the beginning of the gesture.
-           // scrollTo(mStartScrollX + scrollScaleX + scrollPanX,
-           //         mStartScrollY + scrollScaleY + scrollPanY);
+            // scrollTo(mStartScrollX + scrollScaleX + scrollPanX,
+            //         mStartScrollY + scrollScaleY + scrollPanY);
             /*ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
             mObjectAnimator.setDuration(1000);
             mObjectAnimator.start();*/
