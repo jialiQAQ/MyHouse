@@ -152,7 +152,7 @@ public class MyHouseView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        // super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         Log.d(TAG, "onMeasure widthMeasureSpec " + widthMeasureSpec + "heightMeasureSpec " + heightMeasureSpec);
         /***自身宽*/
@@ -174,7 +174,7 @@ public class MyHouseView extends View {
         int h = resolveSizeAndState(minh, heightMeasureSpec, 1);
         Log.d(TAG, "onMeasure w =" + w + " h= " + h + " minw=" + minw + " minh=" + minh);
         // setMeasuredDimension(minw, minh);
-        super.onMeasure(fixedWidthMeasureSpec, fixedHeightMeasureSpec);
+       // super.onMeasure(fixedWidthMeasureSpec, fixedHeightMeasureSpec);
     }
 
     @Override
@@ -195,21 +195,11 @@ public class MyHouseView extends View {
     }
 
     @Override
-    public void draw(Canvas canvas) {
-        super.draw(canvas);
+    public void onDraw(Canvas canvas) {
         // drawBackground(canvas, mBackgroundMode);
         Log.d(TAG, "draw canvas getLeft=" + getLeft() + "getX()=" + getX() + " getTranslationX()=" + getTranslationX() +
                 " getWidth()=" + getWidth() + " getHeight()=" + getHeight());
-
-        drawBackground(canvas);
-      /*  int screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-        int screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
-        ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(this, "translationX", -screenWidth / 2);
-        objectAnimatorX.setDuration(1000);
-        objectAnimatorX.start();
-        ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(this, "translationY", -screenHeight / 2);
-        objectAnimatorY.setDuration(1000);
-        objectAnimatorY.start();*/
+         drawBackground(canvas);
         //draw all houses
         for (int index = 0; index < mHouseList.size(); index++) {
             House house = mHouseList.get(index);
@@ -235,9 +225,9 @@ public class MyHouseView extends View {
             }
         }
     }
-
-    private void drawBackground(Canvas canvas) {
-        final int width = getWidth();  //hdpi 480x800
+    private Bitmap mBitmap;
+    private Canvas drawBackground(Canvas canvas ) {
+       /* final int width = getWidth();  //hdpi 480x800
         final int height = getHeight();
         mBackgroundColor = mContext.getResources().getColor(R.color.half_trans);
         canvas.drawColor(mBackgroundColor);
@@ -252,9 +242,57 @@ public class MyHouseView extends View {
             vertz += space;
             hortz += space;
 
-        }
-    }
+        }*/
+        /**
+         * 注意多个createBiamap重载函数，必须是可变位图对应的重载才能绘制
+         * bitmap: 原图像
+         * pixInterval: 网格线的横竖间隔，单位:像素
+         */
+        int pixInterval = 60;
+        Bitmap bitmap = Bitmap.createBitmap(3240, 5760, Bitmap.Config.ARGB_8888);  //很重要
+        bitmap.eraseColor(Color.WHITE);//填充颜色
+        android.util.Log.d("ryq", " bitmap1 getWidth()=" + bitmap.getWidth() + " bitmap getHeight()=" + bitmap.getHeight());
 
+        Canvas bimapCanvas = new Canvas(bitmap);  //创建画布
+        Paint paint = new Paint();  //画笔
+        paint.setStrokeWidth(1);  //设置线宽。单位为像素
+        paint.setAntiAlias(true); //抗锯齿
+        paint.setColor(Color.RED);  //画笔颜色
+        bimapCanvas.drawBitmap(bitmap, new Matrix(), paint);  //在画布上画一个和bitmap一模一样的图
+        //根据Bitmap大小，画网格线
+        //画横线
+        for (int i = 0; i < bitmap.getHeight() / pixInterval; i++) {
+            bimapCanvas.drawLine(0, i * pixInterval, bitmap.getWidth(), i * pixInterval, paint);
+        }
+        //画竖线
+        for (int i = 0; i < bitmap.getWidth() / pixInterval; i++) {
+            bimapCanvas.drawLine(i * pixInterval, 0, i * pixInterval, bitmap.getHeight(), paint);
+        }
+        canvas.drawBitmap(bitmap, new Matrix(), new Paint());
+        return canvas;
+    }
+    private static Bitmap drawBackground(Bitmap bitmap, int pixInterval) {
+        /**
+         * 注意多个createBiamap重载函数，必须是可变位图对应的重载才能绘制
+         * bitmap: 原图像
+         * pixInterval: 网格线的横竖间隔，单位:像素
+         */
+        Bitmap copy = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);  //很重要
+        Canvas canvas = new Canvas(copy);  //创建画布
+        Paint paint = new Paint();  //画笔
+        paint.setStrokeWidth(1);  //设置线宽。单位为像素
+        paint.setAntiAlias(true); //抗锯齿
+        paint.setColor(Color.RED);  //画笔颜色
+        canvas.drawBitmap(bitmap, new Matrix(), paint);  //在画布上画一个和bitmap一模一样的图
+        //根据Bitmap大小，画网格线
+        for (int i = 0; i < bitmap.getHeight() / pixInterval; i++) {
+            canvas.drawLine(0, i * pixInterval, bitmap.getWidth(), i * pixInterval, paint);
+        }
+        for (int i = 0; i < bitmap.getWidth() / pixInterval; i++) {
+            canvas.drawLine(i * pixInterval, 0, i * pixInterval, bitmap.getHeight(), paint);
+        }
+        return copy;
+    }
     private void drawText(Canvas canvas, String name, RectF rect) {
         float textPaintWidth = mTextPaint.measureText(name);
         Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
@@ -805,9 +843,6 @@ public class MyHouseView extends View {
             // coordinates at the beginning of the gesture.
             // scrollTo(mStartScrollX + scrollScaleX + scrollPanX,
             //         mStartScrollY + scrollScaleY + scrollPanY);
-            /*ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
-            mObjectAnimator.setDuration(1000);
-            mObjectAnimator.start();*/
             Log.d(TAG, "onScale mViewScale = " + mViewScale +
                     " mStartScale=" + mStartScale + " mStartFocusX=" + mStartFocusX
                     + " mStartFocusY=" + mStartFocusY +

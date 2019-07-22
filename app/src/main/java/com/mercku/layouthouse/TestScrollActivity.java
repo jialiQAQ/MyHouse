@@ -12,20 +12,21 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 
 /**
- * Created by yanqiong.ran on 2019-07-12.
+ * Created by yanqiong.ran on 2019-07-18.
  */
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private MyHouseView mMyHouseView;
+public class TestScrollActivity extends AppCompatActivity implements View.OnClickListener {
+    private ImageEditingView mMyHouseView;
     private View mLeftSideView;
     private int mCount = 0;
     private int mCurrentMode = MyHouseView.HOUSE_MODE;
     private Button mChangeModeBtn;
     private View mHouseMenuLayout;
     private View mDotMenuLayout;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_test_scroll);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         findViewById(R.id.text_tap_to_add).setOnClickListener(this);
         findViewById(R.id.text_add_room).setOnClickListener(this);
@@ -34,15 +35,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.current_mode).setOnClickListener(this);
         findViewById(R.id.text_add_dot).setOnClickListener(this);
         findViewById(R.id.text_remove_dot).setOnClickListener(this);
-        // findViewById(R.id.text_zoom_in).setOnClickListener(this);
-        // findViewById(R.id.text_zoom_out).setOnClickListener(this);
-        // findViewById(R.id.text_reset_zoom).setOnClickListener(this);
         mLeftSideView = findViewById(R.id.layout_left_side);
         mMyHouseView = findViewById(R.id.layout_custom_view);
 
         mChangeModeBtn = findViewById(R.id.current_mode);
         mHouseMenuLayout = findViewById(R.id.layout_house_menus);
         mDotMenuLayout = findViewById(R.id.layout_dots_menu);
+        mCurrentMode = MyHouseView.HOUSE_MODE;
         mMyHouseView.setMode(mCurrentMode);
 
         setCurrentModeLayout();
@@ -75,7 +74,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             default:
                 break;
         }
-
     }
 
     private void onClickAddDot() {
