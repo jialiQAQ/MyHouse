@@ -22,6 +22,7 @@ import java.util.ArrayList;
 public class ImageEditingView extends View {
     private static final int BITMAP_WIDTH = 4000;
     private static final int BITMAP_HEIGHT = 4000;
+    private static final int DEFAULT_PIX_INTERVAL = 60;
     private Scroller mScroller;
     private Context mContext;
     private float mLastDownX;
@@ -39,8 +40,6 @@ public class ImageEditingView extends View {
     private float mViewScale = ZOOM_SCALES[INIT_ZOOM_SCALES_INDEX];
     private static final Float MIN_SCALE = 0.5f;
     private static final String TAG = "ryq-ImageEditingView";
-    private int mMaxWidth;
-    private int mMaxHeight;
     private ArrayList<House> mHouseList;
     private ArrayList<String> mNameArrays = new ArrayList<String>();
     //每次从mNameArrays中从第0个按顺序选取名字。
@@ -115,9 +114,6 @@ public class ImageEditingView extends View {
     private void init(Context context) {
         mContext = context;
         mScroller = new Scroller(context);
-
-        mMaxHeight = context.getResources().getDisplayMetrics().heightPixels + 480;
-        mMaxWidth = context.getResources().getDisplayMetrics().widthPixels + 480;
         mNameArrays.add("客厅");
         mNameArrays.add("卧室");
         mNameArrays.add("厨房");
@@ -266,7 +262,8 @@ public class ImageEditingView extends View {
             } else {
                 canvas.drawRect(rect, mHousePaint);
             }
-            drawText(canvas, house.name, rect);
+            drawHouseName(canvas, house.name, rect);
+            drawHouseArea(canvas, rect);
 
         }
         for (int index = 0; index < mDotList.size(); index++) {
@@ -286,20 +283,44 @@ public class ImageEditingView extends View {
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        this.setPivotX(0);
-        this.setPivotY(0);
+        this.setPivotX(BITMAP_WIDTH / 2);
+        this.setPivotY(BITMAP_HEIGHT / 2);
 
         setWillNotDraw(false);
-        mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureListener());         //设置手势缩放的监听
+        mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureListener());//设置手势缩放的监听
 
     }
 
-    private void drawText(Canvas canvas, String name, RectF rect) {
+    private void drawHouseName(Canvas canvas, String name, RectF rect) {
         float textPaintWidth = mTextPaint.measureText(name);
         Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
         float textStartX = (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2;
         float textStartY = (rect.bottom - rect.top) / 2 + rect.top;
         canvas.drawText(name, textStartX, textStartY, mTextPaint);
+    }
+
+    private void drawHouseArea(Canvas canvas, RectF rect) {
+        float width = (rect.right - rect.left) / DEFAULT_PIX_INTERVAL * 0.3f;
+        float height = (rect.bottom - rect.top) / DEFAULT_PIX_INTERVAL * 0.3f;
+        String str = String.format("s=%.1f m²", width * height);
+        float textPaintWidth = mTextPaint.measureText(str);
+        Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+
+
+        //show the area
+        float textStartX = (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2;
+        float textStartY = (rect.bottom - rect.top) / 2 + rect.top + fontMetrics.bottom - fontMetrics.top;
+        canvas.drawText(str, textStartX, textStartY, mTextPaint);
+        //show the width
+        String strWidth = String.format("w=%.1f m", width);
+        canvas.drawText(strWidth, textStartX, rect.top + WALL_WIDTH, mTextPaint);
+        //show the Height
+        String strHeight = String.format("h=%.1f m", height);
+        float strHeightWidth = mTextPaint.measureText(strHeight);
+        Path path = new Path();
+        path.moveTo(rect.right - WALL_WIDTH, rect.top + (rect.bottom - rect.top - strHeightWidth) / 2);
+        path.lineTo(rect.right - WALL_WIDTH, rect.bottom - (rect.bottom - rect.top - strHeightWidth) / 2);
+        canvas.drawTextOnPath(strHeight, path, 0, 0, mTextPaint);
     }
 
     /**
@@ -314,7 +335,7 @@ public class ImageEditingView extends View {
          * bitmap: 原图像
          * pixInterval: 网格线的横竖间隔，单位:像素
          */
-        int pixInterval = 60;
+        int pixInterval = DEFAULT_PIX_INTERVAL;
         Bitmap bitmap = Bitmap.createBitmap(BITMAP_WIDTH, BITMAP_HEIGHT, Bitmap.Config.ARGB_8888);  //很重要
         bitmap.eraseColor(Color.WHITE);//填充颜色
         android.util.Log.d("ryq", " bitmap1 getWidth()=" + bitmap.getWidth() + " bitmap getHeight()=" + bitmap.getHeight());
@@ -347,10 +368,10 @@ public class ImageEditingView extends View {
                 " mIsScale=" + mIsScale +
                 " event.getPointerCount()=" + event.getPointerCount() +
                 " event.getActionMasked()=" + event.getActionMasked());
-        if (event.getPointerCount() > 1) {
+        /*if (event.getPointerCount() > 1) {
             mScaleGestureDetector.onTouchEvent(event);
             return true;
-        }
+        }*/
 
 
         mCurrentX = event.getX();
@@ -429,33 +450,6 @@ public class ImageEditingView extends View {
                 mIsScrollingY = true;
             }
         }
-      /*  if (mIsScrolling) {
-            if (Math.abs(scrolledX) >= Math.abs(scrolledY)) {
-                // if (Math.abs(scrolledX) >= mTouchSlop) {
-                scrollBy(scrolledX, 0);
-                mLastDownX = mCurrentX;
-                // }
-            } else {
-                //  if (Math.abs(scrolledY) >= mTouchSlop) {
-                scrollBy(0, scrolledY);
-                mLastDownY = mCurrentY;
-                //  }
-            }
-        } else {
-            if (Math.abs(scrolledX) >= Math.abs(scrolledY)) {
-                if (Math.abs(scrolledX) >= mTouchSlop) {
-                    scrollBy(scrolledX, 0);
-                    mLastDownX = mCurrentX;
-                    mIsScrolling = true;
-                }
-            } else {
-                if (Math.abs(scrolledY) >= mTouchSlop) {
-                    scrollBy(0, scrolledY);
-                    mLastDownY = mCurrentY;
-                    mIsScrolling = true;
-                }
-            }
-        }*/
     }
 
     private void checkTouchDownViewRange() {
@@ -498,19 +492,19 @@ public class ImageEditingView extends View {
     private int checkNear(int selectedViewIndex) {
 
         RectF rect = mHouseList.get(selectedViewIndex).rect;
-        boolean nearLT = near(mCurrentX, mCurrentY, rect.left, rect.top);
+        boolean nearLT = near(mCurrentX + getScrollX(), mCurrentY + getScrollY(), rect.left, rect.top);
         if (nearLT) {
             return LEFT_TOP;
         }
-        boolean nearLB = near(mCurrentX, mCurrentY, rect.left, rect.bottom);
+        boolean nearLB = near(mCurrentX + getScrollX(), mCurrentY + getScrollY(), rect.left, rect.bottom);
         if (nearLB) {
             return LEFT_BOTTOM;
         }
-        boolean nearRT = near(mCurrentX, mCurrentY, rect.right, rect.top);
+        boolean nearRT = near(mCurrentX + getScrollX(), mCurrentY + getScrollY(), rect.right, rect.top);
         if (nearRT) {
             return RIGHT_TOP;
         }
-        boolean nearRB = near(mCurrentX, mCurrentY, rect.right, rect.bottom);
+        boolean nearRB = near(mCurrentX + getScrollX(), mCurrentY + getScrollY(), rect.right, rect.bottom);
         if (nearRB) {
             return RIGHT_BOTTOM;
         }
@@ -577,16 +571,16 @@ public class ImageEditingView extends View {
                     RectF rect = mHouseList.get(mSelectedViewIndex).rect;
                     switch (mCurrentNEAR) {
                         case LEFT_TOP:
-                            rect.set(mCurrentX, mCurrentY, rect.right, rect.bottom);
+                            rect.set(mCurrentX + getScrollX(), mCurrentY + getScrollY(), rect.right, rect.bottom);
                             break;
                         case LEFT_BOTTOM:
-                            rect.set(mCurrentX, rect.top, rect.right, mCurrentY);
+                            rect.set(mCurrentX + getScrollX(), rect.top, rect.right, mCurrentY + getScrollY());
                             break;
                         case RIGHT_TOP:
-                            rect.set(rect.left, mCurrentY, mCurrentX, rect.bottom);
+                            rect.set(rect.left, mCurrentY + getScrollY(), mCurrentX + getScrollX(), rect.bottom);
                             break;
                         case RIGHT_BOTTOM:
-                            rect.set(rect.left, rect.top, mCurrentX, mCurrentY);
+                            rect.set(rect.left, rect.top, mCurrentX + getScrollX(), mCurrentY + getScrollY());
                             break;
                     }
                 }
@@ -636,10 +630,17 @@ public class ImageEditingView extends View {
         private int mStartScrollX;
         private int mStartScrollY;
 
+        /**
+         * 缩放手势开始，当两个手指放在屏幕上的时候会调用该方法(只调用一次)。
+         * 如果返回 false 则表示不使用当前这次缩放手势； 返回true则会进入onScale()函数
+         *
+         * @param detector
+         * @return
+         */
         @Override
         public boolean onScaleBegin(ScaleGestureDetector detector) {
-            mStartFocusX = detector.getFocusX();
-            mStartFocusY = detector.getFocusY();
+            mStartFocusX = detector.getFocusX(); // 缩放中心，x坐标
+            mStartFocusY = detector.getFocusY();  // 缩放中心y坐标
             mStartScrollX = getScrollX();
             mStartScrollY = getScrollY();
             Log.d(TAG, "onScaleBegin mViewScale = " + mViewScale);
@@ -647,11 +648,20 @@ public class ImageEditingView extends View {
             return true;
         }
 
+        /**
+         * 缩放被触发(会调用0次或者多次)。
+         * 如果返回 true 则表示当前缩放事件已经被处理，检测器会重新积累缩放因子；
+         * 返回 false 则会继续积累缩放因子。
+         *
+         * @param detector
+         * @return
+         */
+
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             final float oldViewScale = mViewScale;
 
-            final float scaleFactor = detector.getScaleFactor();
+            final float scaleFactor = detector.getScaleFactor();// 缩放因子
             mStartScrollY = getScrollY();
             Log.d(TAG, "onScale scaleFactor = " + scaleFactor);
             mViewScale *= scaleFactor;
@@ -707,9 +717,6 @@ public class ImageEditingView extends View {
             // coordinates at the beginning of the gesture.
             // scrollTo(mStartScrollX + scrollScaleX + scrollPanX,
             //         mStartScrollY + scrollScaleY + scrollPanY);
-            /*ObjectAnimator mObjectAnimator = ObjectAnimator.ofFloat(this, "translationY", -dy);
-            mObjectAnimator.setDuration(1000);
-            mObjectAnimator.start();*/
             Log.d(TAG, "onScale mViewScale = " + mViewScale +
                     " mStartScale=" + mStartScale + " mStartFocusX=" + mStartFocusX
                     + " mStartFocusY=" + mStartFocusY +
