@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.*;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -73,10 +75,82 @@ public class ImageEditingView extends View {
     private int mLastSeletedDotIndex = NONE_TOUCH;
     private boolean mIsInitial;
 
-    private class House {
+    public ArrayList<House> getHouseList() {
+        return mHouseList;
+    }
+
+    public static class House implements Parcelable {
         private String name;
         private RectF rect;
         private String id;
+        private String area;
+
+        public String getArea() {
+            return area;
+        }
+
+        public void setArea(String area) {
+            this.area = area;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public RectF getRect() {
+            return rect;
+        }
+
+        public void setRect(RectF rect) {
+            this.rect = rect;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(this.name);
+            dest.writeParcelable(this.rect, flags);
+            dest.writeString(this.id);
+            dest.writeString(this.area);
+        }
+
+        public House() {
+        }
+
+        protected House(Parcel in) {
+            this.name = in.readString();
+            this.rect = in.readParcelable(RectF.class.getClassLoader());
+            this.id = in.readString();
+            this.area = in.readString();
+        }
+
+        public static final Creator<House> CREATOR = new Creator<House>() {
+            @Override
+            public House createFromParcel(Parcel source) {
+                return new House(source);
+            }
+
+            @Override
+            public House[] newArray(int size) {
+                return new House[size];
+            }
+        };
     }
 
     private class Node {
@@ -263,7 +337,7 @@ public class ImageEditingView extends View {
                 canvas.drawRect(rect, mHousePaint);
             }
             drawHouseName(canvas, house.name, rect);
-            drawHouseArea(canvas, rect);
+            drawHouseArea(canvas, house, rect);
 
         }
         for (int index = 0; index < mDotList.size(); index++) {
@@ -299,13 +373,13 @@ public class ImageEditingView extends View {
         canvas.drawText(name, textStartX, textStartY, mTextPaint);
     }
 
-    private void drawHouseArea(Canvas canvas, RectF rect) {
+    private void drawHouseArea(Canvas canvas, House house, RectF rect) {
         float width = (rect.right - rect.left) / DEFAULT_PIX_INTERVAL * 0.3f;
         float height = (rect.bottom - rect.top) / DEFAULT_PIX_INTERVAL * 0.3f;
         String str = String.format("s=%.1f m²", width * height);
+        house.area = str;
         float textPaintWidth = mTextPaint.measureText(str);
         Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
-
 
         //show the area
         float textStartX = (rect.right - rect.left) / 2 + rect.left - textPaintWidth / 2;

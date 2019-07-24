@@ -1,15 +1,16 @@
 package com.mercku.layouthouse;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.RelativeLayout;
+import com.mercku.layouthouse.ImageEditingView.House;
+import com.mercku.layouthouse.model3d.Model3DActivity;
+
+import java.util.ArrayList;
 
 /**
  * Created by yanqiong.ran on 2019-07-18.
@@ -35,6 +36,7 @@ public class TestScrollActivity extends AppCompatActivity implements View.OnClic
         findViewById(R.id.current_mode).setOnClickListener(this);
         findViewById(R.id.text_add_dot).setOnClickListener(this);
         findViewById(R.id.text_remove_dot).setOnClickListener(this);
+        findViewById(R.id.btn_3d).setOnClickListener(this);
         mLeftSideView = findViewById(R.id.layout_left_side);
         mMyHouseView = findViewById(R.id.layout_custom_view);
 
@@ -71,9 +73,19 @@ public class TestScrollActivity extends AppCompatActivity implements View.OnClic
             case R.id.text_remove_dot:
                 onClickRemoveDot();
                 break;
+            case R.id.btn_3d:
+                onClick3D();
+                break;
             default:
                 break;
         }
+    }
+
+    private void onClick3D() {
+        ArrayList<House> houseList = mMyHouseView.getHouseList();
+        Intent intent = new Intent(this, Model3DActivity.class);
+        intent.putExtra(Model3DActivity.HOUSE_LIST, houseList);
+        startActivity(intent);
     }
 
     private void onClickAddDot() {

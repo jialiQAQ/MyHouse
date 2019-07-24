@@ -25,8 +25,7 @@
     <android.support.constraint.ConstraintLayout
             android:id="@+id/layout_left_side"
             android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="wrap_content"
             app:layout_constraintTop_toBottomOf="@+id/text_tap_to_add"
             app:layout_constraintEnd_toEndOf="parent">
         <Button
@@ -91,4 +90,12 @@
 
         </LinearLayout>
     </android.support.constraint.ConstraintLayout>
+    <Button
+            android:id="@+id/btn_3d"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="3D"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_left_side"
+            android:padding="10dp"/>
 </android.support.constraint.ConstraintLayout>
